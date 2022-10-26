@@ -43,7 +43,11 @@ public class PackageJsonDependencyScanner implements Scanner
     public Set<Dependency> scan(SensorContext context)
     {
         FileSystem fs = context.fileSystem();
-        FilePredicate packageJsonPredicate = fs.predicates().matchesPathPattern("**/package.json");
+        FilePredicate packageJsonPredicate =
+            fs.predicates()
+                .and(
+                    fs.predicates().matchesPathPattern("**/package.json"),
+                    fs.predicates().doesNotMatchPathPattern("**/node_modules/**"));
 
         Set<Dependency> allDependencies = new HashSet<>();
 
@@ -51,8 +55,9 @@ public class PackageJsonDependencyScanner implements Scanner
         {
             context.markForPublishing(packageJsonFile);
 
+            File baseDir = new File(fs.baseDir(), packageJsonFile.relativePath()).getParentFile();
             LOGGER.info("Scanning for NPM dependencies (dir={})", fs.baseDir());
-            allDependencies.addAll(dependencyParser(fs.baseDir(), packageJsonFile));
+            allDependencies.addAll(dependencyParser(baseDir, packageJsonFile));
         }
 
         return allDependencies;
